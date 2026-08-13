@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-// URL Foto Background Header (Bisa diganti dengan link foto Unsplash / foto prewedding milikmu)
+// Link Foto Background Header
 const HERO_BG_IMAGE = 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2000&auto=format&fit=crop';
 
 type Claim = {
@@ -37,17 +37,17 @@ export default function HomePage() {
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // Deteksi Pergerakan Scroll untuk Menyempitkan Header
+  // Deteksi Scroll Halus tanpa Layout Shift Loop
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 80) {
+      if (window.scrollY > 120) {
         setIsScrolled(true);
       } else {
         setIsScrolled(false);
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -120,22 +120,22 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-rose-50/30 text-black">
-      {/* Dynamic Shrinking Header / Hero Section */}
+      {/* 1. Header Fixed yang Menyempit Mulus Tanpa Glitch */}
       <header
-        className={`sticky top-0 z-40 w-full bg-cover bg-center transition-all duration-500 ease-in-out shadow-md ${
-          isScrolled ? 'h-48 sm:h-56' : 'h-screen'
+        className={`fixed top-0 left-0 right-0 z-40 bg-cover bg-center transition-all duration-500 ease-out shadow-md ${
+          isScrolled ? 'h-48 sm:h-52' : 'h-screen'
         }`}
         style={{ backgroundImage: `url('${HERO_BG_IMAGE}')` }}
       >
-        {/* Dark Overlay untuk Legibilitas Teks */}
-        <div className="w-full h-full bg-black/50 backdrop-blur-[2px] flex flex-col justify-center items-center text-center px-4 transition-all duration-500">
-          <div className="max-w-2xl text-white space-y-3">
+        {/* Overlay Gelap untuk Keterbacaan Teks */}
+        <div className="w-full h-full bg-black/55 backdrop-blur-[2px] flex flex-col justify-center items-center text-center px-4 transition-all duration-500">
+          <div className="max-w-2xl text-white space-y-2">
             <p className="text-xs sm:text-sm font-semibold tracking-widest text-rose-300 uppercase">
               Wedding Registry
             </p>
             <h1
               className={`font-bold transition-all duration-500 ${
-                isScrolled ? 'text-xl sm:text-3xl' : 'text-3xl sm:text-5xl'
+                isScrolled ? 'text-lg sm:text-2xl' : 'text-3xl sm:text-5xl'
               }`}
             >
               Daftar Wishlist Kado Pernikahan
@@ -143,7 +143,7 @@ export default function HomePage() {
             <p
               className={`text-gray-200 transition-all duration-500 mx-auto ${
                 isScrolled
-                  ? 'text-xs max-w-md line-clamp-1'
+                  ? 'text-[11px] sm:text-xs max-w-md line-clamp-1 opacity-80'
                   : 'text-sm sm:text-base max-w-lg mt-2 leading-relaxed'
               }`}
             >
@@ -161,10 +161,15 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Main Content List Kado */}
-      <main className="max-w-6xl mx-auto p-4 sm:p-8 relative z-10">
+      {/* 2. Spacer Perekam Tinggi Halaman (Mencegah Glitch Loop) */}
+      <div className="h-screen w-full pointer-events-none" />
+
+      {/* 3. Main Content List Kado (Meluncur Di Atas Spacer) */}
+      <main className="max-w-6xl mx-auto p-4 sm:p-8 relative z-10 -mt-16 sm:-mt-24">
         {loading ? (
-          <div className="text-center py-20 text-gray-500">Memuat daftar kado...</div>
+          <div className="text-center py-20 text-gray-500 bg-white rounded-3xl shadow-sm">
+            Memuat daftar kado...
+          </div>
         ) : products.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-3xl shadow-sm p-8 text-gray-500">
             Belum ada kado yang ditampilkan.

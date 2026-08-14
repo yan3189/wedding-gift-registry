@@ -223,10 +223,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-rose-50/30 text-black pb-28 font-sans">
       {/* Import Google Fonts */}
-      <link
-        href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:ital,wght@0,600;1,400&display=swap"
-        rel="stylesheet"
-      />
+      <link href="https://fonts.googleapis.com/css2?family=Tangerine:wght@400;700&display=swap" rel="stylesheet" />
 
       {/* 1. Header Hero Minimalis & Elegan */}
       <header
@@ -235,12 +232,12 @@ export default function HomePage() {
         }`}
         style={{ backgroundImage: `url('${config.background_url || DEFAULT_HERO_BG}')` }}
       >
-        <div className="w-full h-full bg-black/40 backdrop-blur-[1px] flex flex-col justify-start pt-10 items-center text-center px-4 transition-all duration-500">
+        <div className="w-full h-full bg-black/70 backdrop-blur-[1px] flex flex-col justify-start pt-10 items-center text-center px-4 transition-all duration-500">
           <div className="max-w-2xl text-white space-y-2">
             {!isScrolled && (
               <h2
-                style={{ fontFamily: "'Great Vibes', cursive" }}
-                className="text-4xl sm:text-6xl text-rose-200 mb-1 drop-shadow-md"
+                style={{ fontFamily: "'Tangerine', cursive" }}
+                className="text-4xl sm:text-5xl text-orange-600 mb-0 drop-shadow-md"
               >
                 {config.couple_names}
               </h2>
@@ -248,7 +245,7 @@ export default function HomePage() {
 
             <h1
               className={`font-bold transition-all duration-500 tracking-wide font-serif ${
-                isScrolled ? 'text-base sm:text-xl text-rose-100' : 'text-2xl sm:text-4xl text-white'
+                isScrolled ? 'text-base sm:text-xl text-rose-100' : 'text-2xl sm:text-4xl text-orange-200'
               }`}
             >
               {config.hero_title}
@@ -256,11 +253,11 @@ export default function HomePage() {
 
             {!isScrolled && (
               <>
-                <p className="text-gray-200 text-xs sm:text-sm max-w-lg mt-2 leading-relaxed font-light mx-auto">
+                <p className="text-orange-200 text-xs sm:text-sm max-w-lg mt-10 leading-relaxed font-light mx-auto">
                   Kehadiran serta doa restu Anda adalah hadiah terindah dan paling bermakna bagi perjalanan baru kami.
 
 Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, kami menyiapkan Wedding Registry sederhana ini sebagai panduan kecil agar lebih praktis.
-
+<br />
 Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan Anda lah kebahagiaan terbesar bagi kami.
 
                 </p>

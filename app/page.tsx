@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 
-const DEFAULT_HERO_BG = 'https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2000&auto=format&fit=crop';
+const DEFAULT_HERO_BG = 'https://deqzuvxmsmltrcuutxst.supabase.co/storage/v1/object/public/bghero/PYG-70-FAM05529.jpg';
 const RECIPIENT_NAME = 'Gracia Gita';
 const RECIPIENT_PHONE = '081944971533';
 const SHIPPING_ADDRESS = 'Jl. Magnesium No.25, Purwantoro, Kec. Blimbing, Kota Malang, Jawa Timur 65126';
@@ -237,7 +237,7 @@ export default function HomePage() {
             {!isScrolled && (
               <h2
                 style={{ fontFamily: "'Tangerine', cursive" }}
-                className="text-4xl sm:text-5xl text-orange-600 mb-0 drop-shadow-md"
+                className="text-4xl sm:text-5xl text-orange-300 mb-0 drop-shadow-md"
               >
                 {config.couple_names}
               </h2>
@@ -253,12 +253,12 @@ export default function HomePage() {
 
             {!isScrolled && (
               <>
-                <p className="text-orange-200 text-xs sm:text-sm max-w-lg mt-10 leading-relaxed font-light mx-auto">
-                  Kehadiran serta doa restu Anda adalah hadiah terindah dan paling bermakna bagi perjalanan baru kami.
-
+                <p className="text-orange-200 text-xs sm:text-sm max-w-lg mt-6 leading-relaxed font-light mx-auto">
+                  Kehadiran serta doa restu anda adalah hadiah terindah dan paling bermakna bagi perjalanan baru kami.
+<br />
 Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, kami menyiapkan Wedding Registry sederhana ini sebagai panduan kecil agar lebih praktis.
 <br />
-Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan Anda lah kebahagiaan terbesar bagi kami.
+Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan anda lah kebahagiaan terbesar bagi kami.
 
                 </p>
                 <div className="pt-90 animate-bounce">

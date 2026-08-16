@@ -10,11 +10,10 @@ const SHIPPING_ADDRESS = 'Jl. Magnesium No.25, Purwantoro, Kec. Blimbing, Kota M
 
 const CATEGORIES = [
   'Semua',
-  'Perlengkapan Rumah',
-  'Peralatan Dapur',
-  'Elektronik',
+  'Ruang Tamu',
+  'Dapur',
+  'Kamar Mandi',
   'Kamar Tidur',
-  'Voucher & Hobi',
   'Lainnya',
 ];
 
@@ -33,6 +32,8 @@ type Product = {
   category: string;
   shopee_url: string;
   is_claimed: boolean;
+  quantity_expected: number;
+  quantity_fulfilled: number;
   claims?: Claim[];
 };
 
@@ -67,6 +68,7 @@ export default function HomePage() {
   const [buyerName, setBuyerName] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
   const [greeting, setGreeting] = useState('');
+  const [claimQty, setClaimQty] = useState(1);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -90,7 +92,6 @@ export default function HomePage() {
   const fetchInitialData = async () => {
     setLoading(true);
 
-    // 1. Fetch Config
     const { data: configData } = await supabase.from('wedding_config').select('*').single();
     if (configData) {
       setConfig({
@@ -100,7 +101,6 @@ export default function HomePage() {
       });
     }
 
-    // 2. Fetch Products
     const { data: productData, error } = await supabase
       .from('products')
       .select('*, claims(buyer_name, greeting_message, is_anonymous)')
@@ -112,7 +112,6 @@ export default function HomePage() {
     setLoading(false);
   };
 
-  // Filtering & Sorting Produk
   const filteredProducts = products.filter((p) => {
     if (selectedCategory === 'Semua') return true;
     return (p.category || 'Lainnya') === selectedCategory;
@@ -175,6 +174,7 @@ export default function HomePage() {
     setBuyerName('');
     setBuyerPhone('');
     setGreeting('');
+    setClaimQty(1);
     setIsAnonymous(false);
     setErrorMsg('');
   };
@@ -192,11 +192,16 @@ export default function HomePage() {
     setSubmitting(true);
     setErrorMsg('');
 
+    const currentFulfilled = shopeeProduct.quantity_fulfilled || 0;
+    const targetQty = shopeeProduct.quantity_expected || 1;
+    const newFulfilled = currentFulfilled + claimQty;
+    const isFullyClaimed = newFulfilled >= targetQty;
+
     const { error: claimError } = await supabase.from('claims').insert({
       product_id: shopeeProduct.id,
       buyer_name: buyerName,
       buyer_phone: buyerPhone,
-      greeting_message: greeting,
+      greeting_message: greeting + (claimQty > 1 ? ` (Membeli ${claimQty} unit)` : ''),
       is_anonymous: isAnonymous,
     });
 
@@ -208,7 +213,10 @@ export default function HomePage() {
 
     const { error: productError } = await supabase
       .from('products')
-      .update({ is_claimed: true })
+      .update({
+        quantity_fulfilled: newFulfilled,
+        is_claimed: isFullyClaimed,
+      })
       .eq('id', shopeeProduct.id);
 
     if (productError) {
@@ -272,30 +280,25 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
         </div>
       </header>
 
-      {/* 2. Spacer Pengatur Tinggi Header */}
       <div className="h-screen w-full pointer-events-none" />
 
-      {/* 3. Main Content Grid Kado */}
+      {/* Main Content */}
       <main className="max-w-6xl mx-auto p-4 sm:p-8 relative z-10 -mt-12 sm:-mt-20">
-        
-        {/* Dropdown Filter Kategori */}
         <div className="bg-white/90 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-rose-100 mb-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <span className="text-xs font-bold text-gray-700 uppercase tracking-wider">
             🏷️ Filter Kategori:
           </span>
-          <div className="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full sm:w-64 p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl text-xs font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-rose-400"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>
-                  {cat === 'Semua' ? '🎁 Semua Kategori' : cat}
-                </option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="w-full sm:w-64 p-2.5 bg-rose-50/50 border border-rose-200 rounded-xl text-xs font-semibold text-gray-800 outline-none focus:ring-2 focus:ring-rose-400"
+          >
+            {CATEGORIES.map((cat) => (
+              <option key={cat} value={cat}>
+                {cat === 'Semua' ? '🎁 Semua Kategori' : cat}
+              </option>
+            ))}
+          </select>
         </div>
 
         {loading ? (
@@ -309,13 +312,16 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedProducts.map((item) => {
-              const claim = item.claims && item.claims.length > 0 ? item.claims[0] : null;
+              const targetQty = item.quantity_expected || 1;
+              const fulfilledQty = item.quantity_fulfilled || 0;
+              const remainingQty = targetQty - fulfilledQty;
+              const isFullyClaimed = item.is_claimed || fulfilledQty >= targetQty;
 
               return (
                 <div
                   key={item.id}
                   className={`bg-white rounded-2xl overflow-hidden shadow-sm border transition flex flex-col justify-between ${
-                    item.is_claimed ? 'border-gray-100 bg-gray-50/50 opacity-75' : 'border-rose-100 hover:shadow-md'
+                    isFullyClaimed ? 'border-gray-100 bg-gray-50/50 opacity-75' : 'border-rose-100 hover:shadow-md'
                   }`}
                 >
                   <div>
@@ -324,7 +330,7 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
                         <img
                           src={item.image_url}
                           alt={item.title}
-                          className={`w-full h-full object-cover ${item.is_claimed ? 'grayscale-[30%]' : ''}`}
+                          className={`w-full h-full object-cover ${isFullyClaimed ? 'grayscale-[30%]' : ''}`}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400 text-sm">
@@ -339,13 +345,17 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
                       </div>
 
                       <div className="absolute top-3 right-3">
-                        {item.is_claimed ? (
+                        {isFullyClaimed ? (
                           <span className="bg-gray-800/80 backdrop-blur text-white text-[11px] px-3 py-1 rounded-full font-medium">
-                            Telah Ditandai ✨
+                            Telah Dihadiahkan ✨
+                          </span>
+                        ) : fulfilledQty > 0 ? (
+                          <span className="bg-amber-600 text-white text-[11px] px-3 py-1 rounded-full font-medium shadow-sm">
+                            Tersisa {remainingQty} dari {targetQty}
                           </span>
                         ) : (
                           <span className="bg-emerald-600 text-white text-[11px] px-3 py-1 rounded-full font-medium shadow-sm">
-                            Tersedia
+                            Tersedia {targetQty > 1 ? `(${targetQty} unit)` : ''}
                           </span>
                         )}
                       </div>
@@ -356,24 +366,35 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
                       <p className="text-rose-600 font-bold text-base">
                         Rp {item.price ? item.price.toLocaleString('id-ID') : '0'}
                       </p>
+
+                      {/* Baris Informasi Kuantitas / Progress */}
+                      {targetQty > 1 && (
+                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden my-1">
+                          <div
+                            className="bg-rose-500 h-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, (fulfilledQty / targetQty) * 100)}%` }}
+                          />
+                        </div>
+                      )}
+
                       {item.description && <p className="text-gray-500 text-xs line-clamp-2">{item.description}</p>}
 
-                      {item.is_claimed && claim && (
+                      {item.claims && item.claims.length > 0 && (
                         <div className="mt-4 p-3 bg-rose-50/60 rounded-xl border border-rose-100 text-xs space-y-1">
-                          <p className="text-gray-700">
-                            🎁 Dihadiahkan oleh:{' '}
-                            <span className="font-bold text-gray-900">
-                              {claim.is_anonymous ? 'Sahabat Anonim' : claim.buyer_name}
-                            </span>
-                          </p>
-                          {claim.greeting_message && <p className="text-gray-500 italic">"{claim.greeting_message}"</p>}
+                          <p className="text-gray-700 font-medium">🎁 Kontributor Kado:</p>
+                          {item.claims.map((c, idx) => (
+                            <div key={idx} className="text-[11px] text-gray-600 border-t border-rose-100/60 pt-1 mt-1">
+                              • <span className="font-bold">{c.is_anonymous ? 'Sahabat Anonim' : c.buyer_name}</span>
+                              {c.greeting_message && <span className="italic text-gray-500"> — "{c.greeting_message}"</span>}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
                   </div>
 
                   <div className="p-5 pt-0 space-y-2">
-                    {!item.is_claimed ? (
+                    {!isFullyClaimed ? (
                       <>
                         <button
                           onClick={() => handleStartShopeeFlow(item)}
@@ -404,7 +425,7 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
         )}
       </main>
 
-      {/* 4. Floating Address Bar */}
+      {/* Floating Address Bar */}
       <div
         className={`fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-rose-200 p-3 sm:p-4 shadow-lg transition-all duration-500 transform ${
           isScrolled ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0 pointer-events-none'
@@ -432,12 +453,12 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
         </div>
       </div>
 
-      {/* MODAL SERBAGUNA (Edukasi / Confirm / Form / No Reason) */}
+      {/* MODAL SERBAGUNA */}
       {shopeeProduct && shopeeStep && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
           {/* A. HALAMAN EDUKASI */}
           {shopeeStep === 'education' && (
-            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 border border-gray-100 relative overflow-hidden text-center">
+            <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-5 border border-gray-100 relative text-center">
               <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">
                 🛒
               </div>
@@ -574,7 +595,7 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
             </div>
           )}
 
-          {/* C. FORM ISI NAMA */}
+          {/* C. FORM ISI NAMA & KUANTITAS */}
           {shopeeStep === 'form' && (
             <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl space-y-4 border border-gray-100">
               <div className="flex justify-between items-start">
@@ -590,6 +611,29 @@ Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kas
               {errorMsg && <div className="p-3 bg-red-50 text-red-600 rounded-xl text-xs text-center">{errorMsg}</div>}
 
               <form onSubmit={handleSubmitClaim} className="space-y-3">
+                {/* Pilihan Kuantitas yang Dibelikan jika sisa > 1 */}
+                {((shopeeProduct.quantity_expected || 1) - (shopeeProduct.quantity_fulfilled || 0)) > 1 && (
+                  <div className="bg-rose-50/70 border border-rose-200 rounded-xl p-3">
+                    <label className="block text-xs font-bold text-rose-800 mb-1">
+                      Berapa unit yang kamu belikan?
+                    </label>
+                    <select
+                      value={claimQty}
+                      onChange={(e) => setClaimQty(parseInt(e.target.value) || 1)}
+                      className="w-full p-2 bg-white border border-rose-200 rounded-lg text-xs font-semibold outline-none"
+                    >
+                      {Array.from(
+                        { length: (shopeeProduct.quantity_expected || 1) - (shopeeProduct.quantity_fulfilled || 0) },
+                        (_, i) => i + 1
+                      ).map((num) => (
+                        <option key={num} value={num}>
+                          {num} unit
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Nama Anda *</label>
                   <input

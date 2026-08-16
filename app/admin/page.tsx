@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabase';
 import * as XLSX from 'xlsx';
 
@@ -13,6 +14,8 @@ type Product = {
   category: string;
   shopee_url: string;
   is_claimed: boolean;
+  quantity_expected: number;
+  quantity_fulfilled: number;
 };
 
 type WeddingConfig = {
@@ -31,6 +34,8 @@ const CATEGORIES = [
 ];
 
 export default function AdminPage() {
+  const router = useRouter();
+  const [checkingAuth, setCheckingAuth] = useState(true);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,27 +47,40 @@ export default function AdminPage() {
   });
   const [savingConfig, setSavingConfig] = useState(false);
 
-  // Single Product Form State
+  // Form State Kado Baru
   const [title, setTitle] = useState('');
   const [price, setPrice] = useState('');
+  const [quantityExpected, setQuantityExpected] = useState('1');
   const [category, setCategory] = useState('Perlengkapan Rumah');
   const [imageUrl, setImageUrl] = useState('');
   const [shopeeUrl, setShopeeUrl] = useState('');
   const [description, setDescription] = useState('');
   const [addingProduct, setAddingProduct] = useState(false);
 
-  // Edit Product Modal State
+  // Modal Edit State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [updatingProduct, setUpdatingProduct] = useState(false);
 
+  // Cek Autentikasi terlebih dahulu
   useEffect(() => {
-    fetchData();
-  }, []);
+    const checkAuthAndFetch = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (!session) {
+        router.push('/login');
+        return;
+      }
+
+      setCheckingAuth(false);
+      fetchData();
+    };
+
+    checkAuthAndFetch();
+  }, [router]);
 
   const fetchData = async () => {
     setLoading(true);
 
-    // Fetch Config
     const { data: configData } = await supabase.from('wedding_config').select('*').single();
     if (configData) {
       setConfig({
@@ -72,7 +90,6 @@ export default function AdminPage() {
       });
     }
 
-    // Fetch Products
     const { data: productData } = await supabase
       .from('products')
       .select('*')
@@ -84,7 +101,11 @@ export default function AdminPage() {
     setLoading(false);
   };
 
-  // 1. Simpan Config
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
+
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingConfig(true);
@@ -99,11 +120,10 @@ export default function AdminPage() {
 
     if (error) alert('Gagal menyimpan konfigurasi: ' + error.message);
     else alert('✨ Konfigurasi Header & Background berhasil diperbarui!');
-    
+
     setSavingConfig(false);
   };
 
-  // 2. Tambah Kado Tunggal
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setAddingProduct(true);
@@ -111,6 +131,8 @@ export default function AdminPage() {
     const { error } = await supabase.from('products').insert({
       title,
       price: parseInt(price) || 0,
+      quantity_expected: parseInt(quantityExpected) || 1,
+      quantity_fulfilled: 0,
       category,
       image_url: imageUrl,
       shopee_url: shopeeUrl,
@@ -124,6 +146,7 @@ export default function AdminPage() {
       alert('🎉 Kado berhasil ditambahkan!');
       setTitle('');
       setPrice('');
+      setQuantityExpected('1');
       setImageUrl('');
       setShopeeUrl('');
       setDescription('');
@@ -132,21 +155,44 @@ export default function AdminPage() {
     setAddingProduct(false);
   };
 
-  // 3. Edit Kado
+  // TOMBOL DUPLIKASI KADO
+  const handleDuplicateProduct = async (product: Product) => {
+    if (!confirm(`Duplikasi kado "${product.title}"?`)) return;
+
+    const { error } = await supabase.from('products').insert({
+      title: product.title,
+      price: product.price,
+      quantity_expected: product.quantity_expected || 1,
+      quantity_fulfilled: 0,
+      category: product.category,
+      image_url: product.image_url,
+      shopee_url: product.shopee_url,
+      description: product.description,
+      is_claimed: false,
+    });
+
+    if (error) alert('Gagal menduplikasi: ' + error.message);
+    else fetchData();
+  };
+
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
     setUpdatingProduct(true);
+
+    const isFullyClaimed = (editingProduct.quantity_fulfilled || 0) >= (editingProduct.quantity_expected || 1);
 
     const { error } = await supabase
       .from('products')
       .update({
         title: editingProduct.title,
         price: editingProduct.price,
+        quantity_expected: editingProduct.quantity_expected,
         category: editingProduct.category,
         image_url: editingProduct.image_url,
         shopee_url: editingProduct.shopee_url,
         description: editingProduct.description,
+        is_claimed: isFullyClaimed,
       })
       .eq('id', editingProduct.id);
 
@@ -160,7 +206,6 @@ export default function AdminPage() {
     setUpdatingProduct(false);
   };
 
-  // 4. Hapus Kado
   const handleDeleteProduct = async (id: string) => {
     if (!confirm('Yakin ingin menghapus kado ini?')) return;
 
@@ -169,7 +214,6 @@ export default function AdminPage() {
     else fetchData();
   };
 
-  // 5. Bulk Upload Excel
   const handleExcelUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -191,6 +235,8 @@ export default function AdminPage() {
         const formattedProducts = rawData.map((item) => ({
           title: item.title || item.Judul || 'Kado Tanpa Nama',
           price: parseInt(item.price || item.Harga || 0),
+          quantity_expected: parseInt(item.quantity_expected || item.Jumlah || 1),
+          quantity_fulfilled: 0,
           category: item.category || item.Kategori || 'Perlengkapan Rumah',
           image_url: item.image_url || item['URL Gambar'] || '',
           shopee_url: item.shopee_url || item['URL Shopee'] || '',
@@ -213,6 +259,15 @@ export default function AdminPage() {
     reader.readAsBinaryString(file);
   };
 
+  // Tampilkan layar loading saat memeriksa sesi login
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 text-xs text-gray-500 font-sans">
+        Memeriksa hak akses...
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 text-gray-800 p-4 sm:p-8 font-sans">
       <div className="max-w-6xl mx-auto space-y-8">
@@ -223,12 +278,20 @@ export default function AdminPage() {
             <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard - Wedding Gift</h1>
             <p className="text-xs text-gray-500">Kelola informasi pasangan, background, dan daftar kado.</p>
           </div>
-          <a href="/" target="_blank" className="text-xs font-semibold text-rose-600 hover:underline">
-            Lihat Halaman Utama ↗
-          </a>
+          <div className="flex items-center space-x-4">
+            <a href="/" target="_blank" className="text-xs font-semibold text-rose-600 hover:underline">
+              Lihat Halaman Utama ↗
+            </a>
+            <button
+              onClick={handleLogout}
+              className="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-xs font-semibold transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
 
-        {/* SECTION 1: Pengaturan Nama Pasangan & Background */}
+        {/* SECTION 1: Config Header */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
           <h2 className="text-base font-bold text-gray-900">1. Pengaturan Header & Background</h2>
           <form onSubmit={handleSaveConfig} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -239,7 +302,7 @@ export default function AdminPage() {
                 required
                 value={config.couple_names}
                 onChange={(e) => setConfig({ ...config, couple_names: e.target.value })}
-                placeholder="Contoh: Yanuar & Gracia"
+                placeholder="Yanuar & Gracia"
                 className="w-full p-2.5 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
@@ -251,7 +314,7 @@ export default function AdminPage() {
                 required
                 value={config.hero_title}
                 onChange={(e) => setConfig({ ...config, hero_title: e.target.value })}
-                placeholder="Contoh: Wishlist Wedding Gift"
+                placeholder="Wishlist Wedding Gift"
                 className="w-full p-2.5 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
@@ -262,7 +325,7 @@ export default function AdminPage() {
                 type="url"
                 value={config.background_url}
                 onChange={(e) => setConfig({ ...config, background_url: e.target.value })}
-                placeholder="https://images.unsplash.com/..."
+                placeholder="https://..."
                 className="w-full p-2.5 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
@@ -279,11 +342,11 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* SECTION 2: Bulk Input Excel */}
+        {/* SECTION 2: Import Excel */}
         <div className="bg-amber-50/50 rounded-2xl p-6 shadow-sm border border-amber-200/80 space-y-2">
           <h2 className="text-base font-bold text-amber-900">2. Import Massal via Excel (.xlsx)</h2>
           <p className="text-xs text-amber-700">
-            Unggah file Excel dengan nama kolom: <b>title</b>, <b>price</b>, <b>category</b>, <b>image_url</b>, <b>shopee_url</b>, <b>description</b>.
+            Kolom Excel pendukung: <b>title</b>, <b>price</b>, <b>quantity_expected</b>, <b>category</b>, <b>image_url</b>, <b>shopee_url</b>, <b>description</b>.
           </p>
           <input
             type="file"
@@ -293,10 +356,10 @@ export default function AdminPage() {
           />
         </div>
 
-        {/* SECTION 3: Form Tambah Single Product */}
+        {/* SECTION 3: Tambah Kado Baru */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
           <h2 className="text-base font-bold text-gray-900">3. Tambah Kado Baru</h2>
-          <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form onSubmit={handleAddProduct} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-700 mb-1">Judul Kado *</label>
               <input
@@ -304,7 +367,7 @@ export default function AdminPage() {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Misal: Coffee Maker Oxone"
+                placeholder="Misal: Coffee Maker"
                 className="w-full p-2.5 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
@@ -317,6 +380,19 @@ export default function AdminPage() {
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="350000"
+                className="w-full p-2.5 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-rose-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 mb-1">Jumlah Diharapkan *</label>
+              <input
+                type="number"
+                min="1"
+                required
+                value={quantityExpected}
+                onChange={(e) => setQuantityExpected(e.target.value)}
+                placeholder="1"
                 className="w-full p-2.5 border rounded-xl text-xs outline-none focus:ring-2 focus:ring-rose-500"
               />
             </div>
@@ -358,7 +434,7 @@ export default function AdminPage() {
               />
             </div>
 
-            <div>
+            <div className="sm:col-span-3">
               <label className="block text-xs font-semibold text-gray-700 mb-1">Deskripsi / Catatan Tambahan</label>
               <input
                 type="text"
@@ -369,7 +445,7 @@ export default function AdminPage() {
               />
             </div>
 
-            <div className="sm:col-span-2 flex justify-end">
+            <div className="sm:col-span-3 flex justify-end">
               <button
                 type="submit"
                 disabled={addingProduct}
@@ -381,7 +457,7 @@ export default function AdminPage() {
           </form>
         </div>
 
-        {/* SECTION 4: Daftar Kado & Aksi */}
+        {/* SECTION 4: Daftar Kado */}
         <div className="bg-white rounded-2xl p-6 shadow-sm border space-y-4">
           <div className="flex justify-between items-center">
             <h2 className="text-base font-bold text-gray-900">Daftar Kado ({products.length})</h2>
@@ -398,52 +474,74 @@ export default function AdminPage() {
                     <th className="p-3">Judul</th>
                     <th className="p-3">Kategori</th>
                     <th className="p-3">Harga</th>
+                    <th className="p-3">Kuantitas</th>
                     <th className="p-3">Status</th>
                     <th className="p-3 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {products.map((item) => (
-                    <tr key={item.id} className="hover:bg-gray-50/80">
-                      <td className="p-3">
-                        <img
-                          src={item.image_url || 'https://via.placeholder.com/50'}
-                          alt={item.title}
-                          className="w-10 h-10 object-cover rounded-lg border bg-gray-100"
-                        />
-                      </td>
-                      <td className="p-3 font-semibold text-gray-900">{item.title}</td>
-                      <td className="p-3 text-gray-500">{item.category || 'Lainnya'}</td>
-                      <td className="p-3 text-rose-600 font-bold">
-                        Rp {item.price ? item.price.toLocaleString('id-ID') : '0'}
-                      </td>
-                      <td className="p-3">
-                        {item.is_claimed ? (
-                          <span className="bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full text-[10px] font-bold">
-                            Telah Dihadiahkan
-                          </span>
-                        ) : (
-                          <span className="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
-                            Tersedia
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-3 text-right space-x-2">
-                        <button
-                          onClick={() => setEditingProduct(item)}
-                          className="px-3 py-1.5 bg-amber-100 text-amber-800 hover:bg-amber-200 rounded-lg text-[11px] font-semibold"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(item.id)}
-                          className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-[11px] font-semibold"
-                        >
-                          Hapus
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
+                  {products.map((item) => {
+                    const targetQty = item.quantity_expected || 1;
+                    const fulfilledQty = item.quantity_fulfilled || 0;
+                    const isFullyClaimed = item.is_claimed || fulfilledQty >= targetQty;
+
+                    return (
+                      <tr key={item.id} className="hover:bg-gray-50/80">
+                        <td className="p-3">
+                          <img
+                            src={item.image_url || 'https://via.placeholder.com/50'}
+                            alt={item.title}
+                            className="w-10 h-10 object-cover rounded-lg border bg-gray-100"
+                          />
+                        </td>
+                        <td className="p-3 font-semibold text-gray-900">{item.title}</td>
+                        <td className="p-3 text-gray-500">{item.category || 'Lainnya'}</td>
+                        <td className="p-3 text-rose-600 font-bold">
+                          Rp {item.price ? item.price.toLocaleString('id-ID') : '0'}
+                        </td>
+                        <td className="p-3 font-semibold text-gray-700">
+                          {fulfilledQty} / {targetQty} unit
+                        </td>
+                        <td className="p-3">
+                          {isFullyClaimed ? (
+                            <span className="bg-gray-200 text-gray-700 px-2.5 py-1 rounded-full text-[10px] font-bold">
+                              Dihadiahkan ✨
+                            </span>
+                          ) : fulfilledQty > 0 ? (
+                            <span className="bg-amber-100 text-amber-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
+                              Terbeli Sebagian
+                            </span>
+                          ) : (
+                            <span className="bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-full text-[10px] font-bold">
+                              Tersedia
+                            </span>
+                          )}
+                        </td>
+                        <td className="p-3 text-right space-x-1.5">
+                          {/* TOMBOL DUPLIKASI */}
+                          <button
+                            onClick={() => handleDuplicateProduct(item)}
+                            className="px-2.5 py-1.5 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 rounded-lg text-[11px] font-medium"
+                            title="Duplikasi Kado Ini"
+                          >
+                            📋 Duplikasi
+                          </button>
+                          <button
+                            onClick={() => setEditingProduct(item)}
+                            className="px-2.5 py-1.5 bg-amber-100 text-amber-800 hover:bg-amber-200 rounded-lg text-[11px] font-medium"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(item.id)}
+                            className="px-2.5 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg text-[11px] font-medium"
+                          >
+                            Hapus
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -475,7 +573,7 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-xs font-semibold text-gray-700 mb-1">Harga (Rp)</label>
                   <input
@@ -483,6 +581,20 @@ export default function AdminPage() {
                     required
                     value={editingProduct.price}
                     onChange={(e) => setEditingProduct({ ...editingProduct, price: parseInt(e.target.value) || 0 })}
+                    className="w-full p-2 border rounded-xl text-xs outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-gray-700 mb-1">Target Unit</label>
+                  <input
+                    type="number"
+                    min="1"
+                    required
+                    value={editingProduct.quantity_expected || 1}
+                    onChange={(e) =>
+                      setEditingProduct({ ...editingProduct, quantity_expected: parseInt(e.target.value) || 1 })
+                    }
                     className="w-full p-2 border rounded-xl text-xs outline-none"
                   />
                 </div>

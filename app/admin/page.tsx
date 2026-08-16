@@ -25,11 +25,10 @@ type WeddingConfig = {
 };
 
 const CATEGORIES = [
-  'Perlengkapan Rumah',
-  'Peralatan Dapur',
-  'Elektronik',
+  'Ruang Tamu',
+  'Dapur',
+  'Kamar Mandi',
   'Kamar Tidur',
-  'Voucher & Hobi',
   'Lainnya',
 ];
 

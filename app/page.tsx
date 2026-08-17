@@ -236,16 +236,30 @@ export default function HomePage() {
       {/* 1. Header Hero Minimalis & Elegan */}
       <header
         className={`fixed top-0 left-0 right-0 z-40 bg-cover bg-[center_43%] transition-all duration-500 ease-out shadow-md ${
-          isScrolled ? 'h-16 sm:h-20' : 'h-screen'
+          isScrolled ? 'h-16 sm:h-20' : 'h-[100dvh]'
         }`}
         style={{ backgroundImage: `url('${config.background_url || DEFAULT_HERO_BG}')` }}
       >
-        <div className="w-full h-full bg-black/70 backdrop-blur-[1px] flex flex-col justify-start pt-50 items-center text-center px-4 transition-all duration-500">
-          <div className="max-w-2xl text-white space-y-2">
+        <div
+          className={`w-full h-full bg-black/70 backdrop-blur-[1px] px-4 transition-all duration-500 flex flex-col ${
+            isScrolled ? 'justify-center items-center' : 'justify-between py-4 sm:py-8'
+          }`}
+        >
+          {/* Spacer Penyeimbang Atas (Hanya saat belum di-scroll) */}
+          {!isScrolled && <div className="h-2 sm:h-4 flex-none" />}
+
+          {/* KONTEN UTAMA TEKS (OTOMATIS TEPAT DI TENGAH LAYAR VIRTUAL) */}
+          <div
+            className={`w-full max-w-2xl text-white text-center transition-all duration-500 ${
+              !isScrolled
+                ? 'flex-1 flex flex-col justify-center items-center space-y-2 sm:space-y-4 my-auto'
+                : 'space-y-1'
+            }`}
+          >
             {!isScrolled && (
               <h2
                 style={{ fontFamily: "'Tangerine', cursive" }}
-                className="text-4xl sm:text-5xl text-orange-300 mb-0 drop-shadow-md"
+                className="text-4xl sm:text-6xl text-orange-300 drop-shadow-md leading-none"
               >
                 {config.couple_names}
               </h2>
@@ -253,30 +267,31 @@ export default function HomePage() {
 
             <h1
               className={`font-bold transition-all duration-500 tracking-wide font-serif ${
-                isScrolled ? 'text-base sm:text-xl text-rose-100' : 'text-2xl sm:text-4xl text-orange-200'
+                isScrolled ? 'text-base sm:text-xl text-rose-100' : 'text-xl sm:text-3xl text-orange-200'
               }`}
             >
               {config.hero_title}
             </h1>
 
             {!isScrolled && (
-              <>
-                <p className="text-orange-200 text-xs sm:text-sm max-w-lg mt-6 leading-relaxed font-light mx-auto">
-                  Kehadiran serta doa restu anda adalah hadiah terindah dan paling bermakna bagi perjalanan baru kami.
-<br /><br />
-Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, kami menyiapkan Wedding Registry sederhana ini sebagai panduan kecil agar lebih praktis dalam memberikan kado.
-<br /><br />
-Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan anda lah kebahagiaan terbesar bagi kami.
-
-                </p>
-                <div className="pt-30 animate-bounce">
-                  <span className="text-xs text-rose-200 border border-white/20 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm">
-                    Eksplor Wishlist Kado ↓
-                  </span>
-                </div>
-              </>
+              <p className="text-orange-200 text-xs sm:text-sm max-w-lg mt-2 sm:mt-4 leading-relaxed font-light mx-auto px-2">
+                Kehadiran serta doa restu anda adalah hadiah terindah dan paling bermakna bagi perjalanan baru kami.
+                <br /><br />
+                Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, kami menyiapkan Wedding Registry sederhana ini sebagai panduan kecil agar lebih practical dalam memberikan kado.
+                <br /><br />
+                Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan anda lah kebahagiaan terbesar bagi kami.
+              </p>
             )}
           </div>
+
+          {/* TOMBOL EKSPLOR (SELALU TERKUNCI DI SISI BAWAH LAYAR) */}
+          {!isScrolled && (
+            <div className="flex-none pt-2 pb-4 sm:pb-6 animate-bounce text-center">
+              <span className="text-xs text-rose-200 border border-white/20 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm shadow-md inline-block">
+                Eksplor Wishlist Kado ↓
+              </span>
+            </div>
+          )}
         </div>
       </header>
 

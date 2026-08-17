@@ -277,7 +277,7 @@ export default function HomePage() {
               <p className="text-orange-200 text-xs sm:text-sm max-w-lg mt-2 sm:mt-4 leading-relaxed font-light mx-auto px-2">
                 Kehadiran serta doa restu anda adalah hadiah terindah dan paling bermakna bagi perjalanan baru kami.
                 <br /><br />
-                Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, kami menyiapkan Wedding Registry sederhana ini sebagai panduan kecil agar lebih practical dalam memberikan kado.
+                Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, kami menyiapkan Wedding Registry sederhana ini sebagai panduan kecil agar lebih praktis dalam memberikan kado.
                 <br /><br />
                 Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan anda lah kebahagiaan terbesar bagi kami.
               </p>

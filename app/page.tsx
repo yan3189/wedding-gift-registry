@@ -240,7 +240,7 @@ export default function HomePage() {
         }`}
         style={{ backgroundImage: `url('${config.background_url || DEFAULT_HERO_BG}')` }}
       >
-        <div className="w-full h-full bg-black/70 backdrop-blur-[1px] flex flex-col justify-start pt-50 items-center text-center px-4 transition-all duration-500">
+        <div className="w-full h-full bg-black/70 backdrop-blur-[1px] flex flex-col justify-start pt-60 items-center text-center px-4 transition-all duration-500">
           <div className="max-w-2xl text-white space-y-2">
             {!isScrolled && (
               <h2

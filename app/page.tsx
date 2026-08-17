@@ -269,7 +269,7 @@ Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, 
 Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan anda lah kebahagiaan terbesar bagi kami.
 
                 </p>
-                <div className="pt-40 animate-bounce">
+                <div className="pt-30 animate-bounce">
                   <span className="text-xs text-rose-200 border border-white/20 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm">
                     Eksplor Wishlist Kado ↓
                   </span>

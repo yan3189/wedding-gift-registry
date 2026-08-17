@@ -240,7 +240,7 @@ export default function HomePage() {
         }`}
         style={{ backgroundImage: `url('${config.background_url || DEFAULT_HERO_BG}')` }}
       >
-        <div className="w-full h-full bg-black/70 backdrop-blur-[1px] flex flex-col justify-start pt-60 items-center text-center px-4 transition-all duration-500">
+        <div className="w-full h-full bg-black/70 backdrop-blur-[1px] flex flex-col justify-start pt-50 items-center text-center px-4 transition-all duration-500">
           <div className="max-w-2xl text-white space-y-2">
             {!isScrolled && (
               <h2
@@ -269,7 +269,7 @@ Bagi keluarga dan sahabat yang berencana memberikan tanda kasih berbentuk kado, 
 Daftar ini sekadar referensi terbuka. Anda sangat bebas memilih bentuk tanda kasih apa pun, karena kebersamaan anda lah kebahagiaan terbesar bagi kami.
 
                 </p>
-                <div className="pt-50 animate-bounce">
+                <div className="pt-40 animate-bounce">
                   <span className="text-xs text-rose-200 border border-white/20 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm">
                     Eksplor Wishlist Kado ↓
                   </span>

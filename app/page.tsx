@@ -250,7 +250,7 @@ export default function HomePage() {
 
           {/* KONTEN UTAMA TEKS (OTOMATIS TEPAT DI TENGAH LAYAR VIRTUAL) */}
           <div
-            className={`w-full max-w-2xl text-white text-center transition-all duration-500 ${
+            className={`w-full max-w-2xl mx-auto text-white text-center transition-all duration-500 ${
               !isScrolled
                 ? 'flex-1 flex flex-col justify-center items-center space-y-2 sm:space-y-4 my-auto'
                 : 'space-y-1'
